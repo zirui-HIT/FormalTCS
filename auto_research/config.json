@@ -1,0 +1,39 @@
+{
+  "dataset_root": "../benchmark",
+  "state_root": ".cache",
+  "temp_root": "/tmp/auto_research",
+  "results_root": "results",
+  "codex_runtime": "../utils/codex_modelrouter.py",
+  "codex": "codex",
+  "model": "gpt-5.6-sol",
+  "pricing": {
+    "input_per_million": 1.75,
+    "output_per_million": 10.5,
+    "cache_read_per_million": 0.175,
+    "cache_creation_per_million": 2.1875
+  },
+  "lean_root": null,
+  "mathlib_root": null,
+  "lean_jobs": 4,
+  "compile_timeout_seconds": 1800,
+  "strict_timeout_seconds": 3600,
+  "generation": {
+    "sample_size": 16,
+    "max_claims": 3,
+    "stop_on_accept": true,
+    "planner_timeout_seconds": 1800,
+    "formalizer_timeout_seconds": 2400,
+    "judger_timeout_seconds": 1200,
+    "max_endpoint_retries": 5,
+    "retry_backoff_seconds": 90
+  },
+  "proof": {
+    "timeout_seconds": 7200,
+    "max_turns": 3,
+    "max_endpoint_retries": 5,
+    "retry_backoff_seconds": 90
+  },
+  "endpoint_limits": {
+    "codex": 12
+  }
+}

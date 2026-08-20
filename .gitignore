@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+evaluate/.cache/
+evaluate/.env/
+evaluate/results/
+auto_research/.cache/
+auto_research/results/

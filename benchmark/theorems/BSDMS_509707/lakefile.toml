@@ -1,0 +1,9 @@
+name = "theorem_bsdms_509707"
+version = "0.1.0"
+
+moreLeanArgs = ["-j", "4"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "905b95818eb32af7874a58b427f50c1711a5e96c"

@@ -1,0 +1,69 @@
+# Patch layer of the benchmark profile, applied after the dsh-base and
+# dsh-headless bundle layers. It replaces the one-shot headless runner with
+# `runner.js`, which drives a caller-owned, resumable session, and routes the
+# model through one hand-declared OpenAI-compatible endpoint.
+#
+# Every value that varies per turn arrives through the environment, so no
+# credential is ever written into this file or into $DSH_HOME.
+
+# The stock one-shot driver mints a fresh random session id on every launch,
+# which makes it unresumable; `runner.js` replaces both of its rows.
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+# Telemetry stays off unconditionally, independent of DSH_TELEMETRY_DISABLED.
+- id: session-telemetry-otel
+  disabled: true
+
+# The LLM-backed session titler would spend an extra request per session on a
+# title no grader reads.
+- id: session-title-llm
+  disabled: true
+
+# Web search authenticates from DEEPSEEK_API_KEY, which the benchmark never
+# provides; keeping the tool would only add failing tool calls.
+- id: tool-web
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: !!js process.env.DSH_EVAL_PROVIDER
+    model: !!js process.env.DSH_EVAL_MODEL
+
+# One hand-declared route: pi-ai ships no catalog for this endpoint, so the
+# protocol, the base URL and the served model are all spelled out. `apiKeyEnv`
+# is a credential reference resolved at request time by the credentials
+# service, which layers the inherited process environment over
+# $DSH_HOME/.credentials.yaml -- the key itself never lands on disk.
+- id: llm-pi-ai
+  config:
+    providers:
+      evaluate:
+        displayName: Evaluate benchmark route
+        apiKeyEnv: DSH_EVAL_CREDENTIAL
+        api: openai-completions
+        baseURL: !!js process.env.DSH_EVAL_BASE_URL
+        models: !!js >-
+          [{ id: process.env.DSH_EVAL_MODEL,
+             contextWindow: Number(process.env.DSH_EVAL_CONTEXT_WINDOW),
+             maxTokens: Number(process.env.DSH_EVAL_MAX_TOKENS) }]
+
+# The agent's own cwd is the task workspace, so the sandbox root follows it.
+- id: sandbox-policy
+  config:
+    mode: !!js process.env.DSH_PERMISSION_MODE ?? 'danger-full-access'
+    workspaceRoot: !!js process.cwd()
+
+# Approval never asks, whatever the sandbox mode: a benchmark turn has no
+# interactive user to answer.
+- id: approval
+  config:
+    policy: never
+
+- insert:
+    - id: evaluate-runner
+      name: ./runner.js
+      inject: [agentDefaultModel, agents, sessions]

@@ -1,0 +1,17 @@
+name = "sclua_962763"
+version = "0.1.0"
+defaultTargets = ["Proof"]
+moreLeanArgs = ["-j", "4"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "905b95818eb32af7874a58b427f50c1711a5e96c"
+
+[[require]]
+name = "LeanArchitect"
+git = "https://github.com/hanwenzhu/LeanArchitect.git"
+rev = "3810ba48f2e5bbd83b32623d21fc059b279dbf81"
+
+[[lean_lib]]
+name = "Proof"

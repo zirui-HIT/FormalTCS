@@ -1,6 +1,10 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Data.Nat.Log
 import Mathlib.MeasureTheory.Constructions.Pi
 import Mathlib.Probability.Distributions.Gaussian.Real
+
+set_option linter.all false
+set_option maxHeartbeats 500000
 
 open scoped BigOperators
 open MeasureTheory

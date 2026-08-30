@@ -7,13 +7,13 @@ import Mathlib.RepresentationTheory.Invariants
 
 open MeasureTheory ENNReal
 
-def l2_orthonormal_family {X : Type*} [MeasurableSpace X] (mu : Measure X) {r : ℕ}
-    (phi : Fin r → X → ℝ) : Prop :=
-  ∀ l l' : Fin r, ∫ x, phi l x * phi l' x ∂mu = if l = l' then 1 else 0
-
 noncomputable def coeff_to_fun {X : Type*} {r : ℕ} (phi : Fin r → X → ℝ)
     (c : EuclideanSpace ℝ (Fin r)) : X → ℝ :=
   fun x => ∑ l, c l * phi l x
+
+def l2_orthonormal_family {X : Type*} [MeasurableSpace X] (mu : Measure X) {r : ℕ}
+    (phi : Fin r → X → ℝ) : Prop :=
+  ∀ l l' : Fin r, ∫ x, phi l x * phi l' x ∂mu = if l = l' then 1 else 0
 
 noncomputable def l2_sq_dist {X : Type*} [MeasurableSpace X] (mu : Measure X) {r : ℕ}
     (phi : Fin r → X → ℝ) (c d : EuclideanSpace ℝ (Fin r)) : ℝ :=

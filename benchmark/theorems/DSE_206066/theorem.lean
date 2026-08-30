@@ -1,8 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
-set_option linter.all false
-set_option maxHeartbeats 500000
-
 abbrev binary_hypothesis (X : Type) := X → Bool
 
 abbrev hypothesis_class (X : Type) := Set (binary_hypothesis X)

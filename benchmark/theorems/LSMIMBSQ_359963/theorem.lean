@@ -6,6 +6,7 @@ import Mathlib.Probability.IdentDistrib
 import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.Moments.SubGaussian
 
+set_option linter.all false
 set_option maxHeartbeats 500000
 
 open MeasureTheory
@@ -124,10 +125,11 @@ noncomputable def conditional_second_moment {Ω Θ : Type*} [MeasurableSpace Ω]
 
 noncomputable def gradient_condition_number {Ω Θ : Type*} [MeasurableSpace Ω]
     {m d : ℕ} (μ : Measure Ω) (M : sgd_model Ω Θ m d)
-    (G : ℝ) (T : ℕ) (ω : Ω) : ℝ :=
-  G ^ 2 / sInf {q : ℝ | ∃ (v : EuclideanSpace ℝ (Fin m)) (t : ℕ),
+    (G : ℝ) (T : ℕ) (ω : Ω) : ENNReal :=
+  ENNReal.ofReal (G ^ 2) /
+    sInf {q : ENNReal | ∃ (v : EuclideanSpace ℝ (Fin m)) (t : ℕ),
     ‖v‖ = 1 ∧ t ∈ Finset.Icc 1 T ∧
-      q = conditional_second_moment μ M t v ω}
+      q = ENNReal.ofReal (conditional_second_moment μ M t v ω)}
 
 noncomputable def log_scale (T d p : ℕ) (δ : ℝ) : ℝ :=
   Real.log (((T : ℝ) * (d : ℝ) * (p : ℝ)) / δ)
@@ -148,7 +150,7 @@ noncomputable def admissible_sgd_regime (C c c' κbar η : ℝ)
 noncomputable def condition_number_event {Ω Θ : Type*} [MeasurableSpace Ω]
     {m d : ℕ} (μ : Measure Ω) (M : sgd_model Ω Θ m d)
     (G κbar : ℝ) (T : ℕ) : Set Ω :=
-  {ω | gradient_condition_number μ M G T ω ≤ κbar}
+  {ω | gradient_condition_number μ M G T ω ≤ ENNReal.ofReal κbar}
 
 noncomputable def uniform_small_alignment_event {Ω Θ : Type*} [MeasurableSpace Ω]
     {m p d : ℕ} (M : sgd_model Ω Θ m d) (U : weight_rows p d)
@@ -161,12 +163,13 @@ theorem main
     (K₁ K₂ K₃ α₂ G : ℝ)
     (hK₁ : 0 < K₁) (hK₂ : 0 < K₂) (hK₃ : 0 < K₃)
     (hα₂ : 0 < α₂) (hG : 0 < G) :
-    ∃ C c c' : ℝ, 0 < C ∧ 0 < c ∧ 0 < c' ∧
+    ∃ c c' : ℝ, 0 < c ∧ 0 < c' ∧
       ∀ {m d p T : ℕ} {Ω Θ : Type*} [MeasurableSpace Ω] [MeasurableSpace Θ]
         (μ : Measure Ω) [MeasureTheory.IsProbabilityMeasure μ]
         (M : sgd_model Ω Θ m d) (U : weight_rows p d)
         (ψ : ℝ → ℝ) (δ κbar η : ℝ),
-        0 < m → 0 < d → 0 < p → 0 < T →
+        ∃ C : ℝ, 0 < C ∧
+        (0 < m → 0 < d → 0 < p → 0 < T →
         0 < δ → 1 ≤ κbar → 0 ≤ η →
         sgd_semantic_coherence μ M →
         sub_gaussian_input_assumptions μ M K₁ K₂ α₂ →
@@ -174,11 +177,11 @@ theorem main
         bounded_activation_gradients μ M G →
         population_gradient_controlled M U ψ →
         follows_first_layer_sgd M η →
+        0 < μ (condition_number_event μ M G κbar T) →
         admissible_sgd_regime C c c' κbar η m p d T δ ψ →
         MeasurableSet (condition_number_event μ M G κbar T) →
         MeasurableSet (uniform_small_alignment_event M U C κbar T δ) →
-        0 < μ (condition_number_event μ M G κbar T) →
         (ProbabilityTheory.cond μ
           (condition_number_event μ M G κbar T))
             (uniform_small_alignment_event M U C κbar T δ) ≥
-          ENNReal.ofReal (1 - δ) := by sorry
+          ENNReal.ofReal (1 - δ)) := by sorry

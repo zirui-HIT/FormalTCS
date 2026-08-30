@@ -59,8 +59,7 @@ noncomputable def expected_retrieval_query_cost {U n V w m : ℕ}
 def has_expected_query_cost {U n V w m : ℕ}
     (scheme : randomized_static_retrieval_scheme U n V w m) (t : ℕ) : Prop :=
   ∀ (input : static_retrieval_instance U n V) (x : Fin U),
-    x ∈ input.keySet →
-      MeasureTheory.Integrable
+    MeasureTheory.Integrable
           (fun tape : random_tape =>
             (count_retrieval_probes (scheme.encode input tape)
               (scheme.query x tape) : ℝ))

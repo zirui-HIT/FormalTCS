@@ -131,6 +131,6 @@ theorem random_choice_copeland_small_group_distortion
     [MeasurableSpace Voter] [MetricSpace Point]
     [MeasurableSpace Point] [BorelSpace Point]
     (E : metric_election Candidate Voter Point) :
-    copeland_distortion_at_most E 2 3.34 ∧
+      copeland_distortion_at_most E 2 3.344 ∧
       copeland_distortion_at_most E 3 2.31 ∧
       copeland_distortion_at_most E 4 1.901 := by sorry

@@ -1,3 +1,4 @@
+import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 import Mathlib.Data.EReal.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.InformationTheory.KullbackLeibler.Basic
@@ -133,7 +134,7 @@ noncomputable def excess_memorization_correction
 
 noncomputable def classification_capacity_constant (α : ℝ) : EReal :=
   if α ≤ 0 then ⊤
-  else ((((1 - 2 * α) * Real.log ((1 - α) / α) : ℝ) : EReal))
+  else (((1 - 2 * α) * Real.log ((1 - α) / α) : ℝ) : EReal)
 
 noncomputable def minimal_necessary_memorization
     {Ω Θ X Train M : Type*} [MeasurableSpace Ω] [MeasurableSpace Θ]
@@ -158,6 +159,7 @@ theorem minimal_necessary_memorization_lower_bound
     [SecondCountableTopology X] [T2Space X] [Nonempty X]
     [StandardBorelSpace (Fin n → X)] [MeasurableSpace M]
     [MeasurableSingletonClass M]
+    [Finite M]
     [MeasurableSpace.CountablyGenerated M]
     (μ : Measure Ω) [IsProbabilityMeasure μ]
     (Ψ : Measure Θ) (P : ProbabilityTheory.Kernel Θ X)
@@ -172,8 +174,15 @@ theorem minimal_necessary_memorization_lower_bound
     (hTest : approximate_strong_data_processing_inequality
       μ test training ρ δ)
     (hρ : 0 < ρ)
-    (hα : α < 1 / 2) :
-    minimal_necessary_memorization (M := M) μ parameter training test
+    (hα : α < 1 / 2)
+    (hSymmetricError : ∀ algorithm : learning_algorithm (Fin n → X) M,
+      let ν := learning_algorithm_joint_measure μ training hData.2.1 algorithm
+      classification_error ν Prod.snd (fun ωz => test ωz.1) predict ≤ α →
+      ν {ωz | predict (Prod.snd ωz) (test ωz.1) = false} =
+        ((Measure.map Prod.snd ν).prod
+          (Measure.map (fun ωz => test ωz.1) ν))
+            {pair | predict pair.1 pair.2 = true}) :
+    minimal_necessary_memorization μ parameter training test
         hData.2.1 hTest.1 predict hPredict α ≥
       (((1 - τ) / ρ : ℝ) : EReal) *
         classification_capacity_constant α -

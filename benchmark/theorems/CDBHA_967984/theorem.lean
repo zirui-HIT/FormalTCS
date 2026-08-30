@@ -2,8 +2,9 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Real.Basic
+import Mathlib.Order.Monotone.Basic
 
-open Classical
+set_option linter.all false
 
 def submodular_inspection_cost {A : Type} [DecidableEq A]
     (v : Finset A → ℝ) : Prop :=
@@ -116,7 +117,7 @@ theorem submod
     {A : Type} [Fintype A] [DecidableEq A]
     (d : contract_data A) (hadm : admissible_contract_data d)
     (hsubmod : submodular_inspection_cost d.inspectionCost) :
-    (∃ s : inspection_scheme A,
-      optimal_inspection_scheme d s ∧
-      (inspection_support s.inspection).card ≤ Fintype.card A + 1) ∧
-    Nonempty abstract_submodular_value_oracle_solver := by sorry
+    Nonempty abstract_submodular_value_oracle_solver ∧
+      ∃ s : inspection_scheme A,
+        optimal_inspection_scheme d s ∧
+        (inspection_support s.inspection).card ≤ Fintype.card A + 1 := by sorry

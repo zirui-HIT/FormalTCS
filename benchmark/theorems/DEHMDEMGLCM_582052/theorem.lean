@@ -1,9 +1,14 @@
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib
+import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
+import Mathlib.Combinatorics.SetFamily.Shatter
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
-import Mathlib.MeasureTheory.Measure.WithDensity
 import Mathlib.MeasureTheory.Measure.FiniteMeasurePi
+import Mathlib.MeasureTheory.Measure.WithDensity
+import Mathlib.Probability.Distributions.Binomial
+import Mathlib.Probability.Moments.Basic
 
-open scoped ENNReal
+set_option linter.all false
+set_option maxHeartbeats 500000
 
 structure hellinger_density (Ω : Type*) [MeasurableSpace Ω]
     (μ : MeasureTheory.Measure Ω) where

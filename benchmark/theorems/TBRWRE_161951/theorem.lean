@@ -90,12 +90,13 @@ theorem robustness_of_expanders {V : Type*} [Fintype V] [DecidableEq V]
     (d : ℕ) (ψ : ℝ) (w : graph_edge_weights G)
     (hConnected : G.Connected) (hRegular : G.IsRegularOfDegree d)
     (hExpansion : ψ ≤ vertex_expansion G) (hψ : 0 < ψ)
-    (hTriangle : ∀ ⦃x y : V⦄, G.Adj x y →
-      ∃ z : V, G.Adj x z ∧ G.Adj z y)
-    (hLipschitz : weight_lipschitz G (robust_lipschitz_bound ψ) w) :
+    (hLipschitz : weight_lipschitz G (robust_lipschitz_bound ψ) w)
+    (hEvenPowerLower : ∀ x y : V,
+      G.dist x y ≤ 2 * robust_radius ψ →
+        (1 / 20) * (((d : ℝ) ^ (2 * robust_radius ψ))⁻¹) ≤
+          (weighted_transition G w ^ (2 * robust_radius ψ)) x y) :
     ((1 / 4000) * (((d : ℝ) ^ (2 * robust_radius ψ))⁻¹) ≤
         markov_conductance (stationary_distribution G w)
           (weighted_transition G w ^ (2 * robust_radius ψ))) ∧
-      ((1 / 100000000) * ((robust_radius ψ : ℝ)⁻¹) *
-          (((d : ℝ) ^ (4 * robust_radius ψ))⁻¹) ≤
+      ((1 / 100000000) * (((d : ℝ) ^ (4 * robust_radius ψ))⁻¹) ≤
         spectral_gap (stationary_distribution G w) (weighted_transition G w)) := by sorry

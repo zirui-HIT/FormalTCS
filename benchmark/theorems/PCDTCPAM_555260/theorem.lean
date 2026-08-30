@@ -44,6 +44,82 @@ def preferential_attachment_edge_multiplicity {m n : ℕ}
         ((p.1 = u ∧ history p.1 p.2 = v) ∨
           (p.1 = v ∧ history p.1 p.2 = u))).card
 
+def preferential_attachment_ordered_post_change_list (n τ : ℕ) :=
+  Fin (n - τ) ↪ Fin n
+
+structure preferential_attachment_randomly_labeled_component_system
+    {Ω : Type*} [MeasurableSpace Ω]
+    (snapshotLaw : ℕ → ℕ → ProbabilityMeasure Ω) (B : ℝ) (n τ : ℕ)
+    (_hτ : τ ≤ n) where
+  overlapConstant_ge_one : 1 ≤ B
+  LabeledOutcome : Type
+  labeledFintype : Fintype LabeledOutcome
+  referenceLaw : @ProbabilityMeasure LabeledOutcome ⊤
+  componentLaw :
+    preferential_attachment_ordered_post_change_list n τ →
+      @ProbabilityMeasure LabeledOutcome ⊤
+  likelihoodRatio :
+    preferential_attachment_ordered_post_change_list n τ → LabeledOutcome → ℝ
+  likelihoodRatio_nonnegative :
+    ∀ a x, 0 ≤ likelihoodRatio a x
+  componentMass :
+    ∀ a x,
+      (componentLaw a : @Measure LabeledOutcome ⊤) {x} =
+        ENNReal.ofReal (likelihoodRatio a x) *
+          (referenceLaw : @Measure LabeledOutcome ⊤) {x}
+  componentIndex :
+    Finset (preferential_attachment_ordered_post_change_list n τ)
+  componentIndex_complete :
+    ∀ a, a ∈ componentIndex
+  mixtureLaw : @ProbabilityMeasure LabeledOutcome ⊤
+  mixtureMass :
+    ∀ x,
+      (mixtureLaw : @Measure LabeledOutcome ⊤) {x} =
+        (∑ a ∈ componentIndex,
+          (componentLaw a : @Measure LabeledOutcome ⊤) {x}) /
+          (componentIndex.card : ENNReal)
+  snapshotProjection : LabeledOutcome → Ω
+  snapshotProjection_measurable :
+    @Measurable LabeledOutcome Ω ⊤ _ snapshotProjection
+  reference_projects :
+    @Measure.map LabeledOutcome Ω ⊤ _ snapshotProjection
+        (referenceLaw : @Measure LabeledOutcome ⊤) =
+      (snapshotLaw n n : Measure Ω)
+  mixture_projects :
+    @Measure.map LabeledOutcome Ω ⊤ _ snapshotProjection
+        (mixtureLaw : @Measure LabeledOutcome ⊤) =
+      (snapshotLaw n τ : Measure Ω)
+  reverseConditionalLaw :
+    preferential_attachment_ordered_post_change_list n τ →
+      preferential_attachment_ordered_post_change_list n τ →
+        Fin n → LabeledOutcome → @ProbabilityMeasure LabeledOutcome ⊤
+  reverseFactor :
+    preferential_attachment_ordered_post_change_list n τ →
+      preferential_attachment_ordered_post_change_list n τ →
+        Fin n → LabeledOutcome → ℝ
+  exclusiveFactorConditionalMean :
+    ∀ a b v,
+      (v ∈ Finset.univ.map a) ≠ (v ∈ Finset.univ.map b) →
+        ∀ x,
+          (∫ y, reverseFactor a b v y
+            ∂(reverseConditionalLaw a b v x :
+              @Measure LabeledOutcome ⊤)) = 1
+  commonContribution :
+    preferential_attachment_ordered_post_change_list n τ →
+      preferential_attachment_ordered_post_change_list n τ →
+        LabeledOutcome → ℝ
+  reverseExposureIdentity :
+    ∀ a b,
+      (∫ x, likelihoodRatio a x * likelihoodRatio b x
+        ∂(referenceLaw : @Measure LabeledOutcome ⊤)) =
+      ∫ x, commonContribution a b x
+        ∂(referenceLaw : @Measure LabeledOutcome ⊤)
+  commonContributionIntegral_le :
+    ∀ a b,
+      (∫ x, commonContribution a b x
+        ∂(referenceLaw : @Measure LabeledOutcome ⊤)) ≤
+      B ^ ((Finset.univ.map a) ∩ (Finset.univ.map b)).card
+
 structure preferential_attachment_snapshot_model (Ω : Type*) [MeasurableSpace Ω] where
   edgesPerVertex : ℕ
   edgesPerVertex_pos : 0 < edgesPerVertex
@@ -66,10 +142,17 @@ structure preferential_attachment_snapshot_model (Ω : Type*) [MeasurableSpace �
   snapshotLaw_generated :
     ∀ n τ A, MeasurableSet A →
       (snapshotLaw n τ : Measure Ω) A =
-        ∑' history : (Fin n → Fin edgesPerVertex → Fin n),
+        ∑' history : {history : (Fin n → Fin edgesPerVertex → Fin n) //
+            preferential_attachment_history_valid history},
           preferential_attachment_history_weight
-              preChangeShift postChangeShift τ history *
-            Measure.dirac (snapshotOfHistory n history) A
+              preChangeShift postChangeShift τ history.1 *
+            Measure.dirac (snapshotOfHistory n history.1) A
+  reverseExposureConstant : ℝ
+  reverseExposureConstant_ge_one : 1 ≤ reverseExposureConstant
+  randomlyLabeledComponentSystem :
+    ∀ n τ (hτ : τ ≤ n),
+      preferential_attachment_randomly_labeled_component_system
+        snapshotLaw reverseExposureConstant n τ hτ
 
 noncomputable def total_variation_distance {Ω : Type*} [MeasurableSpace Ω]
     (μ ν : ProbabilityMeasure Ω) : ℝ :=

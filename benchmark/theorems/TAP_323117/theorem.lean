@@ -4,8 +4,6 @@ import Mathlib.Analysis.Convex.Function
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Real.Basic
 
-set_option linter.all false
-
 structure canonical_conversation where
   horizon : ℕ
   horizon_pos : 0 < horizon
@@ -138,7 +136,7 @@ theorem canonical
       2 ≤ k →
       k % 2 = 0 →
       delta * conversation.horizon ≤
-        (round_subsequence conversation k).card →
+        (round_subsequence conversation (k + 1)).card →
       squared_error conversation Finset.univ
           (human_bucketed_round_prediction conversation
             humanWidth k) /
@@ -147,11 +145,14 @@ theorem canonical
           (squared_error conversation Finset.univ
                 (bucketed_round_prediction conversation
                   (modelWidth conversation.horizon) 1) /
-              conversation.horizon)
+              conversation.horizon -
+            (epsilon ^ 2 * delta -
+              beta_error conversation humanError modelError
+                humanWidth modelWidth))
           (squared_error conversation Finset.univ
                 (bucketed_round_prediction conversation
                   (humanWidth conversation.horizon) 2) /
               conversation.horizon) -
-        (k : ℝ) * (epsilon ^ 2 * delta -
-          beta_error conversation humanError modelError
-            humanWidth modelWidth) := by sorry
+          ((k : ℝ) - 2) * (epsilon ^ 2 * delta -
+            beta_error conversation humanError modelError
+              humanWidth modelWidth) := by sorry

@@ -5,9 +5,6 @@ import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
 import Mathlib.Order.Partition.Finpartition
 
-set_option linter.all false
-set_option maxHeartbeats 500000
-
 open scoped BigOperators
 
 def indexed_union {κ ι : Type*} [DecidableEq ι]
@@ -33,10 +30,13 @@ def has_general_mixed_moments {Ω ι : Type*} [MeasurableSpace Ω] [DecidableEq 
     {ℓ q r : ℕ} (μ : MeasureTheory.Measure Ω) (Z : Fin ℓ → Ω → ℝ)
     (I : Fin ℓ → Finset ι) (A : Fin q → Finset ι) (B : Fin r → Finset ι)
     (η x₀ y₀ : ℝ) : Prop :=
-  ∀ Δ : Finset (Fin ℓ),
-    MeasureTheory.Integrable (fun ω ↦ ∏ t ∈ Δ, Z t ω) μ ∧
-      (∫ ω, ∏ t ∈ Δ, Z t ω ∂μ) =
-        mixed_moment_right_hand_side I A B η x₀ y₀ Δ
+  Set.univ.PairwiseDisjoint I ∧
+    Set.univ.PairwiseDisjoint A ∧
+    Set.univ.PairwiseDisjoint B ∧
+    ∀ Δ : Finset (Fin ℓ),
+      MeasureTheory.Integrable (fun ω ↦ ∏ t ∈ Δ, Z t ω) μ ∧
+        (∫ ω, ∏ t ∈ Δ, Z t ω ∂μ) =
+          mixed_moment_right_hand_side I A B η x₀ y₀ Δ
 
 def total_index_count {ι : Type*} [DecidableEq ι] {ℓ : ℕ}
     (I : Fin ℓ → Finset ι) : ℕ :=
@@ -65,12 +65,8 @@ theorem upper_bound_general_cumulant
     (Z : Fin ℓ → Ω → ℝ) (I : Fin ℓ → Finset ι)
     (A : Fin q → Finset ι) (B : Fin r → Finset ι) (η x₀ y₀ : ℝ)
     (hℓ : 0 < ℓ) (hη : 0 ≤ η) (hx₀ : 0 ≤ x₀) (hy₀ : 0 ≤ y₀)
-    (hI_disjoint : (Set.univ : Set (Fin ℓ)).PairwiseDisjoint I)
-    (hA_disjoint : (Set.univ : Set (Fin q)).PairwiseDisjoint A)
-    (hB_disjoint : (Set.univ : Set (Fin r)).PairwiseDisjoint B)
     (hmom : has_general_mixed_moments μ Z I A B η x₀ y₀) :
     (1 ≤ r →
-      0 < y₀ →
       2 * (total_index_count I : ℝ) ^ 2 * y₀ ≤ 1 →
       2 * x₀ ≤ y₀ →
       |joint_cumulant μ Z| ≤

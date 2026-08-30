@@ -2,13 +2,13 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Combinatorics.SimpleGraph.Finite
 import Mathlib.Data.Matrix.Mul
 import Mathlib.MeasureTheory.Constructions.Pi
-import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.Probability.Distributions.Gaussian.Real
 
 set_option linter.all false
 set_option maxHeartbeats 500000
 
 open scoped BigOperators
-open MeasureTheory
+open MeasureTheory ProbabilityTheory
 
 abbrev graph_on (n : ℕ) := SimpleGraph (Fin n)
 
@@ -75,6 +75,9 @@ noncomputable def approximate_factorization_norm {k d : ℕ}
 noncomputable def privacy_scale (ε δ : ℝ) : ℝ :=
   Real.sqrt (2 * Real.log (1.25 / δ)) / ε
 
+noncomputable def all_epsilon_privacy_scale (ε δ : ℝ) : ℝ :=
+  privacy_scale ε δ + Real.sqrt (ε⁻¹)
+
 noncomputable def expected_workload_error {n k : ℕ} (s : ℕ)
     (W : Matrix (Fin k) (Fin (blur_dimension n s)) ℝ)
     (G : graph_on n) (μ : Measure (Fin k → ℝ)) : ℝ :=
@@ -85,7 +88,7 @@ theorem fact_mech_blurry :
       ∀ (ε δ : ℝ) (n k s : ℕ) (α : ℝ)
         (W : Matrix (Fin k) (Fin (blur_dimension n s)) ℝ),
         0 < ε → 0 < δ → δ ≤ 1 →
-        0 < n → 2 ≤ k → 0 < s → 0 ≤ α →
+        0 < n → 0 < s → 0 ≤ α →
         ∃ A : randomized_graph_algorithm n k,
           is_lndp ε δ A ∧
           ∀ G : graph_on n,
@@ -95,5 +98,5 @@ theorem fact_mech_blurry :
               expected_workload_error s W G (A G) ≤
                 C * (α + approximate_factorization_norm W α *
                   Real.sqrt (((n : ℝ)⁻¹ + (s : ℝ)⁻¹ ^ 2) *
-                    Real.log (k : ℝ)) *
-                  privacy_scale ε δ) := by sorry
+                    Real.log (2 * (k : ℝ))) *
+                  all_epsilon_privacy_scale ε δ) := by sorry

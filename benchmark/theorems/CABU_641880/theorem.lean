@@ -100,40 +100,58 @@ def path_edge_load (T : path_transport V) (u v : V) : ℝ :=
     T.weight k * ((directed_path_edge_count (T.path k) u v : ℝ) +
       (directed_path_edge_count (T.path k) v u : ℝ))
 
-def transport_endpoint_coverage (c : Sym2 V → ℝ)
+def admissible_stopping_decomposition (c : Sym2 V → ℝ) (β : ℝ)
     (P : ℕ → Finpartition (Finset.univ : Finset V)) (L i : ℕ)
-    (T : path_transport V) : Prop :=
-  ∀ (a a' : V → ℝ) (q : Finset V → V → ℝ)
+    (T : path_transport V) (a : V → ℝ) : Prop :=
+  ∃ (a' : V → ℝ) (q : ℕ → Finset V → V → ℝ)
     (scale : ℕ → Fin T.cardinality → Fin 8 → ℝ)
     (cutoff : (j : ℕ) → (k : Fin T.cardinality) → Fin 8 →
       Fin ((T.path k).length + 1))
-    (forward : ℕ → Fin T.cardinality → Fin 8 → Bool),
-    is_demand a →
-    (∀ v, |a v| ≤ deg_weighted c (cross_partition_ind (P i)) v) →
-    is_demand a' →
+    (forward : ℕ → Fin T.cardinality → Fin 8 → Bool)
+    (gstop : V → V → ℝ),
+    is_demand a' ∧
     (∀ v, |a' v| ≤
-      deg_weighted c (cross_partition_ind (P (i + 1))) v) →
-    (∀ j ∈ Finset.Icc (i + 1) L, ∀ k, ∀ s : Fin 8,
-      0 ≤ scale j k s ∧ scale j k s ≤ 1) →
-    (∀ k, (∑ j ∈ Finset.Icc (i + 1) L, ∑ s : Fin 8, scale j k s) ≤
-      8 * (L : ℝ)) →
-    (∀ C ∈ (P (i + 1)).parts,
-      is_demand (q C) ∧ (∀ v, v ∉ C → q C v = 0)) →
-    (∀ v, a v - a' v - ∑ C ∈ (P (i + 1)).parts, q C v =
-      ∑ j ∈ Finset.Icc (i + 1) L,
-        ∑ k : Fin T.cardinality, ∑ s : Fin 8,
-          scale j k s * T.weight k *
-            ((if (T.path k).vertex (cutoff j k s) = v then (1 : ℝ) else 0) -
-              if (if forward j k s = true then
-                  (T.path k).vertex ⟨0, Nat.zero_lt_succ (T.path k).length⟩
-                else (T.path k).vertex (Fin.last (T.path k).length)) = v
-              then (1 : ℝ) else 0)) →
-    ∀ C ∈ (P (i + 1)).parts, ∀ v,
-      |q C v| ≤
+      deg_weighted c (cross_partition_ind (P (i + 1))) v) ∧
+    (∀ r ∈ Finset.Icc (i + 1) L, ∀ D ∈ (refinement P r L).parts,
+      |∑ v ∈ D, a' v| ≤ delta_cut c D) ∧
+    (∀ j ∈ Finset.Icc (i + 1) L, ∀ C ∈ (P j).parts,
+      is_demand (q j C) ∧
+      (∀ v, v ∉ C → q j C v = 0) ∧
+      (∀ v, |q j C v| ≤
         restrict_to C
           (fun w =>
-            deg_weighted c (cross_partition_ind (P i)) w +
-            deg_weighted c (cross_cluster_ind C) w) v
+            deg_weighted c (cross_partition_ind (P (j - 1))) w +
+            deg_weighted c (cross_cluster_ind C) w) v)) ∧
+    (∀ j ∈ Finset.Icc (i + 1) L, ∀ k, ∀ s : Fin 8,
+      0 ≤ scale j k s ∧ scale j k s ≤ 1) ∧
+    (∀ k, (∑ j ∈ Finset.Icc (i + 1) L, ∑ s : Fin 8, scale j k s) ≤
+      8 * (L : ℝ)) ∧
+    (∀ v, a v - a' v -
+      ∑ j ∈ Finset.Icc (i + 1) L, ∑ C ∈ (P j).parts, q j C v =
+        ∑ j ∈ Finset.Icc (i + 1) L,
+          ∑ k : Fin T.cardinality, ∑ s : Fin 8,
+            scale j k s * T.weight k *
+              ((if (T.path k).vertex (cutoff j k s) = v then (1 : ℝ) else 0) -
+                if (if forward j k s = true then
+                    (T.path k).vertex
+                      ⟨0, Nat.zero_lt_succ (T.path k).length⟩
+                  else (T.path k).vertex (Fin.last (T.path k).length)) = v
+                then (1 : ℝ) else 0)) ∧
+    is_flow gstop ∧
+    routes gstop
+      (fun v => a v - a' v -
+        ∑ j ∈ Finset.Icc (i + 1) L, ∑ C ∈ (P j).parts, q j C v) ∧
+    has_congestion c (8 * (L : ℝ) * β) gstop
+
+def transport_endpoint_coverage (c : Sym2 V → ℝ) (β : ℝ)
+    (P : ℕ → Finpartition (Finset.univ : Finset V)) (L i : ℕ)
+    (T : path_transport V) : Prop :=
+  ∀ a : V → ℝ,
+    is_demand a →
+    (∀ v, |a v| ≤ deg_weighted c (cross_partition_ind (P i)) v) →
+    (∀ r ∈ Finset.Icc (i + 1) L, ∀ D ∈ (refinement P r L).parts,
+      |∑ v ∈ D, a v| ≤ delta_cut c D) →
+    admissible_stopping_decomposition c β P L i T a
 
 def flow_hypothesis (c : Sym2 V → ℝ) (β : ℝ)
     (P : ℕ → Finpartition (Finset.univ : Finset V)) (L : ℕ) : Prop :=
@@ -148,7 +166,7 @@ def flow_hypothesis (c : Sym2 V → ℝ) (β : ℝ)
         path_receipt_mass T v ≤
           (1 / 2) * deg_weighted c (cross_partition_ind (P i)) v) ∧
       (∀ u v, path_edge_load T u v ≤ β * c s(u, v)) ∧
-      transport_endpoint_coverage c P L i T
+      transport_endpoint_coverage c β P L i T
 
 theorem cut_approx (c : Sym2 V → ℝ) (W α β : ℝ)
     (P : ℕ → Finpartition (Finset.univ : Finset V)) (L : ℕ)

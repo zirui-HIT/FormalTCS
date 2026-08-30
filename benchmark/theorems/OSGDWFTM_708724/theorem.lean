@@ -3,8 +3,7 @@ import Mathlib.Analysis.Calculus.FDeriv.Defs
 import Mathlib.Analysis.Convex.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
-set_option linter.all false
-set_option maxHeartbeats 500000
+open MeasureTheory
 
 abbrev rate_vector (Job : Type*) := Job → ℝ
 
@@ -129,7 +128,7 @@ def active_feasible_rates {Job : Type*}
 structure gradient_descent_algorithm {Job : Type*} [Fintype Job]
     (P : polytope_scheduling_problem Job) where
   to_online : online_scheduling_algorithm P
-  minimizes_residual_derivative :
+  minimizes_residual_gradient :
     ∀ (speed : ℝ) (hspeed : 0 < speed)
       (I : weighted_job_instance Job) (t : ℝ), 0 ≤ t →
       let S := to_online.run speed hspeed I
@@ -141,6 +140,16 @@ structure gradient_descent_algorithm {Job : Type*} [Fintype Job]
             residual_directional_derivative
               (residual_integral_optimum P I.weight) x y (D y)) ∧
           ∀ y ∈ active_feasible_rates P x, D z ≤ D y
+  follows_residual_optimizer_between_releases :
+    ∀ (I : weighted_job_instance Job) (a b : ℝ), 0 ≤ a → a ≤ b →
+      (∀ j, I.release j ∉ Set.Ioc a b) →
+      let S := to_online.run 1 zero_lt_one I
+      let x := remaining_job_size S a
+      ∃ R : residual_schedule P x,
+        residual_weighted_completion I.weight R =
+            residual_integral_optimum P I.weight x ∧
+          ∀ u : ℝ, a ≤ u → u ≤ b →
+            S.rate u = R.rate (u - a)
 
 def integral_speed_competitive {Job : Type*} [Fintype Job]
     (P : polytope_scheduling_problem Job) (A : online_scheduling_algorithm P)
@@ -150,10 +159,11 @@ def integral_speed_competitive {Job : Type*} [Fintype Job]
       ratio * offline_integral_optimum P I
 
 theorem gradient_descent_desiderata_for_integral_objective
-    : ∃ C : ℝ, 0 < C ∧
-      ∀ (Job : Type) [Fintype Job]
+    : ∀ (Job : Type) [Fintype Job]
         (P : polytope_scheduling_problem Job) (GD : gradient_descent_algorithm P),
         (∀ w : rate_vector Job, (∀ j, 0 < w j) →
           discrete_supermodular (residual_integral_optimum P w)) →
-        ∀ ε : ℝ, 0 < ε →
-          integral_speed_competitive P GD.to_online (1 + ε) (C / ε) := by sorry
+        ∃ C : ℝ, 0 < C ∧
+          ∀ ε : ℝ, 0 < ε →
+            ∃ Aε : online_scheduling_algorithm P,
+              integral_speed_competitive P Aε (1 + ε) (C / ε) := by sorry

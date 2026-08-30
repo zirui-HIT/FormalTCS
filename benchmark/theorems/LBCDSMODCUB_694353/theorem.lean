@@ -1,5 +1,7 @@
 import Mathlib.Analysis.Asymptotics.Defs
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.MeasureTheory.Measure.FiniteMeasurePi
 import Mathlib.Probability.Moments.Variance
 import Mathlib.Probability.ProbabilityMassFunction.Basic
@@ -134,38 +136,6 @@ noncomputable def group_means_risk {K M : ℕ} [NeZero K] [NeZero M]
     (P : conditional_outcome_model K) : ℝ :=
   ∫ D, (∑ z, (estimator D z - conditional_group_mean P z) ^ 2) ∂sampling_law p n P
 
-noncomputable def population_worst_case_risk {K M : ℕ} [NeZero K] [NeZero M]
-    (p : biased_source_mean_problem K M) (n : sampling_plan M)
-    (estimator : sampled_dataset K M n → ℝ)
-    (hrisk : BddAbove {r : ℝ | ∃ P, bounded_conditional_mean_class p P ∧
-      r = population_mean_risk p n estimator P}) : ℝ :=
-  sSup {r : ℝ | ∃ P, bounded_conditional_mean_class p P ∧
-    r = population_mean_risk p n estimator P}
-
-noncomputable def group_worst_case_risk {K M : ℕ} [NeZero K] [NeZero M]
-    (p : biased_source_mean_problem K M) (n : sampling_plan M)
-    (estimator : sampled_dataset K M n → (Fin K → ℝ))
-    (hrisk : BddAbove {r : ℝ | ∃ P, bounded_conditional_mean_class p P ∧
-      r = group_means_risk p n estimator P}) : ℝ :=
-  sSup {r : ℝ | ∃ P, bounded_conditional_mean_class p P ∧
-    r = group_means_risk p n estimator P}
-
-noncomputable def population_minimax_risk {K M : ℕ} [NeZero K] [NeZero M]
-    (p : biased_source_mean_problem K M) (B : ℝ) : ℝ :=
-  sInf {r : ℝ | ∃ n : sampling_plan M, budget_feasible_plan p B n ∧
-    ∃ estimator : sampled_dataset K M n → ℝ, Measurable estimator ∧
-      ∃ hrisk : BddAbove {s : ℝ | ∃ P, bounded_conditional_mean_class p P ∧
-        s = population_mean_risk p n estimator P},
-        r = population_worst_case_risk p n estimator hrisk}
-
-noncomputable def group_minimax_risk {K M : ℕ} [NeZero K] [NeZero M]
-    (p : biased_source_mean_problem K M) (B : ℝ) : ℝ :=
-  sInf {r : ℝ | ∃ n : sampling_plan M, budget_feasible_plan p B n ∧
-    ∃ estimator : sampled_dataset K M n → (Fin K → ℝ), Measurable estimator ∧
-      ∃ hrisk : BddAbove {s : ℝ | ∃ P, bounded_conditional_mean_class p P ∧
-        s = group_means_risk p n estimator P},
-        r = group_worst_case_risk p n estimator hrisk}
-
 noncomputable def population_leading_risk {K M : ℕ} [NeZero K] [NeZero M]
     (p : biased_source_mean_problem K M) (n : sampling_plan M) (B : ℝ) : ℝ :=
   p.varianceBound * average_plan_cost p.cost n *
@@ -180,33 +150,21 @@ noncomputable def inverse_budget_rate (B : ℝ) : ℝ :=
   1 / B
 
 theorem minimax_optimal_data_collection_under_budget {K M : ℕ} [NeZero K] [NeZero M]
-    (p : biased_source_mean_problem K M) (hmean : 0 < p.meanRadius) :
-    ∃ targetPlans uniformPlans : ℝ → sampling_plan M,
+    (p : biased_source_mean_problem K M) :
+    ∃ planT planU : ℝ → sampling_plan M,
       (∀ B, 0 < B →
-        optimal_sampling_plan p (fun z => pmf_real_mass p.targetGroup z) B (targetPlans B)) ∧
-      (∀ B, 0 < B →
-        optimal_sampling_plan p (uniform_group_mass K) B (uniformPlans B)) ∧
-      (∀ B, Measurable
-        (post_stratified_estimator p.targetGroup : sampled_dataset K M (targetPlans B) → ℝ)) ∧
-      (∀ B, Measurable
-        (vector_of_means_estimator : sampled_dataset K M (uniformPlans B) → (Fin K → ℝ))) ∧
+        optimal_sampling_plan p (fun z => pmf_real_mass p.targetGroup z) B (planT B)) ∧
+      (∀ B, 0 < B → optimal_sampling_plan p (uniform_group_mass K) B (planU B)) ∧
       (∀ P, bounded_conditional_mean_class p P →
         ∃ remainder : ℝ → ℝ,
           Asymptotics.IsLittleO Filter.atTop remainder inverse_budget_rate ∧
           ∀ B, 0 < B →
-            population_mean_risk p (targetPlans B)
+            population_mean_risk p (planT B)
                 (post_stratified_estimator p.targetGroup) P ≤
-              population_leading_risk p (targetPlans B) B + remainder B) ∧
-      Asymptotics.IsLittleO Filter.atTop
-        (fun B => population_minimax_risk p B -
-          population_leading_risk p (targetPlans B) B)
-        inverse_budget_rate ∧
+              population_leading_risk p (planT B) B + remainder B) ∧
       (∀ P, bounded_conditional_mean_class p P →
         ∃ remainder : ℝ → ℝ,
           Asymptotics.IsLittleO Filter.atTop remainder inverse_budget_rate ∧
           ∀ B, 0 < B →
-            group_means_risk p (uniformPlans B) vector_of_means_estimator P ≤
-              group_leading_risk p (uniformPlans B) B + remainder B) ∧
-      Asymptotics.IsLittleO Filter.atTop
-        (fun B => group_minimax_risk p B - group_leading_risk p (uniformPlans B) B)
-        inverse_budget_rate := by sorry
+            group_means_risk p (planU B) vector_of_means_estimator P ≤
+              group_leading_risk p (planU B) B + remainder B) := by sorry

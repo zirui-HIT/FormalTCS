@@ -1,7 +1,6 @@
 import Mathlib
 
-set_option linter.all false
-set_option maxHeartbeats 500000
+open MeasureTheory ProbabilityTheory
 
 def is_moore_penrose_inverse {d : ℕ}
     (A B : Matrix (Fin d) (Fin d) ℝ) : Prop :=

@@ -2,9 +2,6 @@ import Mathlib.Computability.TuringMachine.StackTuringMachine
 import Mathlib.Data.Finset.Filter
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 
-set_option linter.all false
-set_option maxHeartbeats 500000
-
 structure communication_resources where
   alice_bits : ℕ
   bob_bits : ℕ
@@ -316,12 +313,14 @@ structure reduction_constants where
   soundness_exponent : ℕ
   false_positive_factor : ℕ
   output_factor : ℕ
+  additive_slack : ℕ
   space_exponent_pos : 0 < space_exponent
   preprocessing_exponent_pos : 0 < preprocessing_exponent
   query_exponent_pos : 0 < query_exponent
   soundness_exponent_pos : 0 < soundness_exponent
   false_positive_factor_pos : 0 < false_positive_factor
   output_factor_pos : 0 < output_factor
+  additive_slack_pos : 0 < additive_slack
 
 def exponential_overhead (constant cost : ℕ) : ℕ :=
   2 ^ (constant * cost)
@@ -342,7 +341,7 @@ def has_preprocessing_bound
     execution_time (dataStructure.preprocess dataset randomSeed) ≤
       exponential_overhead constants.preprocessing_exponent
           (c_a + c_b + c_m) *
-        dataset.card * (t_a + t_b + t_c) + 2
+        dataset.card * (t_a + t_b + t_c) + constants.additive_slack
 
 def query_upper_bound
     (constants : reduction_constants)
@@ -352,7 +351,7 @@ def query_upper_bound
     (constants.false_positive_factor : ℝ) * ε * (n : ℝ) +
     (exponential_overhead constants.soundness_exponent c_m : ℝ) *
       δ * (n : ℝ) +
-    (constants.output_factor : ℝ) * (n_y : ℝ) + 2
+    (constants.output_factor : ℝ) * (n_y : ℝ) + (constants.additive_slack : ℝ)
 
 def has_expected_query_bound
     {X Y : Type} (dataStructure : reporting_data_structure X Y)

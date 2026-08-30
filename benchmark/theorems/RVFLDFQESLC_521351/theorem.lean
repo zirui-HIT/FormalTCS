@@ -69,8 +69,7 @@ def is_binary_lcc {k n : ℕ} (C : binary_linear_code k n)
   ∃ D : randomized_adaptive_decoder n n (ZMod 2),
     decoder_uses_at_most_queries (q := q) D ∧
       (∀ b u,
-        randomized_adaptive_decoder_output D (C.encode b) u (C.encode b u) ≥
-          ENNReal.ofReal c) ∧
+        randomized_adaptive_decoder_output D (C.encode b) u (C.encode b u) ≥ ENNReal.ofReal c) ∧
       (∀ b u y,
         within_relative_hamming_radius C δ b y →
           binary_decoding_error (randomized_adaptive_decoder_output D y u) (C.encode b u) ≤

@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Convex.StdSimplex
 import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
@@ -7,6 +8,7 @@ import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.Process.Filtration
 
 set_option linter.all false
+set_option maxHeartbeats 800000
 
 structure hierarchical_two_point_bandit
     (Action Node Ω : Type*) [Fintype Action] [Nonempty Action] [DecidableEq Action]
@@ -90,6 +92,14 @@ structure hierarchical_two_point_bandit
 variable {Action Node Ω : Type*} [Fintype Action] [Nonempty Action] [DecidableEq Action]
   [Fintype Node] [DecidableEq Node] [MeasurableSpace Ω]
 
+def probability_vector (p : Action → ℝ) : Prop :=
+  p ∈ stdSimplex ℝ Action
+
+noncomputable def subtree_mass
+    (M : hierarchical_two_point_bandit Action Node Ω) (x : Action → ℝ) (v : Node) : ℝ := by
+  classical
+  exact ∑ a, if M.descends v a then x a else 0
+
 def generalized_stochastic_condition
     (M : hierarchical_two_point_bandit Action Node Ω) : Prop :=
   (∀ t a,
@@ -98,16 +108,8 @@ def generalized_stochastic_condition
           M.conditionalMeanLoss t ω M.optimalAction) ∧
     M.gap M.optimalAction = 0 ∧
       ∀ t a, M.gap a = 0 →
-        (fun ω => M.conditionalMeanLoss t ω a) =ᵐ[M.measure]
-          fun ω => M.conditionalMeanLoss t ω M.optimalAction
-
-def probability_vector (p : Action → ℝ) : Prop :=
-  p ∈ stdSimplex ℝ Action
-
-noncomputable def subtree_mass
-    (M : hierarchical_two_point_bandit Action Node Ω) (x : Action → ℝ) (v : Node) : ℝ := by
-  classical
-  exact ∑ a, if M.descends v a then x a else 0
+        (fun ω => M.loss t ω a) =ᵐ[M.measure]
+          fun ω => M.loss t ω M.optimalAction
 
 noncomputable def two_point_nested_tsallis_regularizer
     (M : hierarchical_two_point_bandit Action Node Ω) (t : ℕ) (x : Action → ℝ) : ℝ :=
@@ -126,10 +128,6 @@ noncomputable def two_point_regret
       ∂M.measure) -
     ∫ ω, ∑ t ∈ Finset.range T, M.loss t ω (M.bestAction T) ∂M.measure
 
-noncomputable def effective_action_number
-    (M : hierarchical_two_point_bandit Action Node Ω) (w : Fin M.depth → ℝ) : ℝ :=
-  (∑ j, (M.scale j / w j) * Real.sqrt ((M.levelNodes j).card : ℝ)) ^ 2
-
 noncomputable def level_gap_complexity
     (M : hierarchical_two_point_bandit Action Node Ω) (j : Fin M.depth) : ℝ := by
   classical
@@ -140,6 +138,18 @@ noncomputable def stochastic_effective_action_number
   (∑ j,
       (M.scale j / Real.sqrt (M.delta j)) *
         Real.sqrt (level_gap_complexity M j)) ^ 2
+
+noncomputable def two_point_adversarial_raw_bound
+    (M : hierarchical_two_point_bandit Action Node Ω) (T : ℕ) : ℝ :=
+  18 * ∑ j, (M.scale j / M.delta j) * Real.sqrt ((M.levelNodes j).card : ℝ) +
+    8 * Real.sqrt 6 *
+      (∑ j, (M.scale j / Real.sqrt (M.delta j)) *
+        Real.sqrt ((M.levelNodes j).card : ℝ)) * Real.sqrt T
+
+noncomputable def two_point_stochastic_raw_bound
+    (M : hierarchical_two_point_bandit Action Node Ω) (T : ℕ) : ℝ :=
+  36 * ∑ j, (M.scale j / M.delta j) * Real.sqrt ((M.levelNodes j).card : ℝ) +
+    96 * stochastic_effective_action_number M * Real.log (Real.exp 1 * T)
 
 def conditional_independence_over
     (ambient m m₁ m₂ : MeasurableSpace Ω)
@@ -217,6 +227,25 @@ structure two_point_ftrl_run (M : hierarchical_two_point_bandit Action Node Ω) 
                     subtree_mass M (distribution t ω) v))
               0)
             0
+  sampled_centered_variance_integrable :
+    ∀ t j,
+      MeasureTheory.Integrable
+        (fun ω =>
+          if M.sampledLevel t ω = j then
+            ∑ v ∈ M.levelNodes j,
+              (subtree_mass M (distribution t ω) v *
+                  Real.sqrt (subtree_mass M (distribution t ω) v)) *
+                ((@ite ℝ (M.descends v (M.firstAction t ω))
+                    (M.descends_decidable v (M.firstAction t ω))
+                    ((M.loss t ω (M.firstAction t ω) -
+                          M.loss t ω (M.secondAction t ω) + shift j) /
+                      (M.delta j * subtree_mass M (distribution t ω) v))
+                    0) -
+                  (M.loss t ω (M.firstAction t ω) -
+                      M.loss t ω (M.secondAction t ω) + shift j) /
+                    M.delta j) ^ 2
+          else 0)
+        M.measure
   estimated_regret_integrable :
     ∀ t q, probability_vector q →
       MeasureTheory.Integrable
@@ -228,6 +257,12 @@ structure two_point_ftrl_run (M : hierarchical_two_point_bandit Action Node Ω) 
           (fun ω => ∑ a, estimatedLoss t ω a * (distribution t ω a - q a)) =ᵐ[M.measure]
         fun ω => ∑ a,
           (distribution t ω a - q a) * M.conditionalMeanLoss t ω a
+  zero_gap_blockwise_stability :
+    ∀ (t : ℕ) (ω : Ω) (j : Fin M.depth) (b : Node → ℝ),
+      (∀ v, v ∈ M.levelNodes j → M.nodeGap v ≠ 0 → b v = 0) →
+      ∑ v ∈ M.levelNodes j,
+        b v * (subtree_mass M (distribution t ω) v -
+          subtree_mass M (distribution (t + 1) ω) v) = 0
 
 theorem two_point_feedback
     (M : hierarchical_two_point_bandit Action Node Ω) (run : two_point_ftrl_run M)
@@ -236,12 +271,6 @@ theorem two_point_feedback
       ∀ t x, 1 ≤ t → probability_vector x →
         run.regularizer t x = two_point_nested_tsallis_regularizer M t x)
     (hshift : ∀ j, run.shift j = M.scale j) :
-    two_point_regret M T ≤
-        18 * Real.sqrt (effective_action_number M M.delta) +
-          8 * Real.sqrt 6 *
-            Real.sqrt
-              (effective_action_number M (fun j => Real.sqrt (M.delta j)) * T) ∧
+    two_point_regret M T ≤ two_point_adversarial_raw_bound M T ∧
       (generalized_stochastic_condition M →
-        two_point_regret M T ≤
-          36 * Real.sqrt (effective_action_number M M.delta) +
-            96 * stochastic_effective_action_number M * Real.log (Real.exp 1 * T)) := by sorry
+        two_point_regret M T ≤ two_point_stochastic_raw_bound M T) := by sorry

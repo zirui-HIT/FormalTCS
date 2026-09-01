@@ -1,4 +1,4 @@
-# FormalTCS: Benchmarking End-to-End Frontier Formal Theoretical Computer Science Research of Large Language Models
+# [FormalTCS: Benchmarking End-to-End Frontier Formal Theoretical Computer Science Research of Large Language Models](https://arxiv.org/abs/2608.20153)
 
 This repository contains a Lean 4 benchmark built from **143 core theorems from theoretical computer science papers**. Each benchmark item includes a natural-language statement and proof together with a verified Lean 4 formalization against Mathlib.
 
